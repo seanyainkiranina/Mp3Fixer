@@ -112,7 +112,7 @@ def create_directory(path):
 
 # Example usage
 if __name__ == "__main__":
-    PATH_DIR = "C:\\Users\\seany\\Music\\Tmp"
+    PATH_DIR = "C:\\Users\\seany\\Music"
     # create_directory(folder_path)
     files = os.listdir(PATH_DIR)
     madeDirs = {}
@@ -142,6 +142,10 @@ if __name__ == "__main__":
             artist = get_contributing_artist(targetFile)
             if artist is None and file in artistNames:
                 artist = artistNames[file]
+                audio = EasyID3(targetFile)
+                audio["artist"] = artist
+                audio.save()
+
             print(f"Artist: {artist}")
             if artist is not None:
                 newdirArtist = NEW_DIR + "\\" + artist
