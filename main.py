@@ -215,3 +215,22 @@ def read_directory(path_dir):
         shutil.copy(target_file, newdir_artist_file)
         made_dirs[tag.album] = newdir_artist_album
         print(f"Copied file to: {newdir_artist_file}")
+
+
+def browse_folder():
+    """Open a dialog to browse and select a folder."""
+    folder_path = filedialog.askdirectory()
+    print(f"Selected Folder: {folder_path}")
+    return folder_path
+
+
+# Example usage
+if __name__ == "__main__":
+   # root.withdraw()  # Hide the root window
+    root = tk.Tk()
+    root.title("MP3 Browser")
+    directory = filedialog.askdirectory()
+    if os.path.isdir(directory):
+        read_directory(directory)
+    print(directory)
+    root.mainloop()
