@@ -103,7 +103,7 @@ def get_contributing_artist(mp3_path):
     if aa is None:
         try:
             audio_file = EasyID3(mp3_path)
-            aa = audio_file.get("artist", None)
+            aa = audio_file.get("albumartist", None)
             if aa is not None:
                 aa = aa[0]
         except (ID3NoHeaderError, KeyError):
@@ -138,20 +138,20 @@ if __name__ == "__main__":
     albumNames = {}
     artistNames = {}
     for file in files:
-        albumNames = {}
         EXT = file[file.rfind(".") + 1 :]
-        if EXT == "mp3":
-            targetFile = PATH_DIR + "\\" + file
-            tagg: TinyTag = TinyTag.get(targetFile)
-            if tagg.album is not None and tagg.album not in albumNames:
-                albumNames[tagg.album] = file
-            if tagg.album is None:
-                print(f"No album tag found for file: {file}")
-                continue
-            if tagg.albumartist is not None and file not in artistNames:
-                artistNames[file] = tagg.albumartist
-                artistNames[tagg.album] = tagg.albumartist
-                print(f"Found artist tag: {tagg.albumartist} for file: {file}")
+        if EXT != "mp3":
+            continue
+        targetFile = PATH_DIR + "\\" + file
+        tagg: TinyTag = TinyTag.get(targetFile)
+        if tagg.album is not None and tagg.album not in albumNames:
+            albumNames[tagg.album] = file
+        if tagg.album is None:
+            print(f"No album tag found for file: {file}")
+            continue
+        if tagg.albumartist is not None and file not in artistNames:
+            artistNames[file] = tagg.albumartist
+            artistNames[tagg.album] = tagg.albumartist
+            print(f"Found artist tag: {tagg.albumartist} for file: {file}")
         for f in albumNames:
             if f not in artistNames:
                 albums = get_album_info(f, limit=1)
@@ -163,43 +163,48 @@ if __name__ == "__main__":
                     artistNames[f] = albums[0]["artist"]
             else:
                 artistNames[file] = artistNames[f]
-    for a in albumNames:
-        print(f"Album: {a} Artist: {artistNames[a]}")
 
     for file in files:
         ext = file[file.rfind(".") + 1 :]
-        if ext == "mp3":
-            targetFile = PATH_DIR + "\\" + file
-            print(f"Processing file: {targetFile}")
-            tag: TinyTag = TinyTag.get(targetFile)
-            if tag.album is None:
-                print(f"No album tag found for file: {file}")
-                continue
+        if ext != "mp3":
+            continue
+        targetFile = PATH_DIR + "\\" + file
+        print(f"Processing file: {targetFile}")
+        tag: TinyTag = TinyTag.get(targetFile)
+        if tag.album is None:
+            print(f"No album tag found for file: {file}")
+            continue
+        artist = tag.albumartist
+        if artist is None:
             artist = get_contributing_artist(targetFile)
-            if file in artistNames:
-                artist = artistNames[file]
-                set_artist_tag(targetFile, artist)
-            if artist is not None and file not in artistNames:
-                artistNames[file] = artist
-                set_artist_tag(targetFile, artist)
+        if artist is not None and file not in artistNames:
+            artistNames[file] = artist
 
-            print(f"Artist: {artist}")
-            if artist is not None:
-                newdirArtist = NEW_DIR + "\\" + artist
-                create_directory(newdirArtist)
-                if tag.album is not None:
-                    newdirArtistAlbum = newdirArtist + "\\" + tag.album + "\\"
-                    newdirArtistFile = (
-                        newdirArtist
-                        + "\\"
-                        + tag.album
-                        + "\\"
-                        + remove_non_ascii(tag.title)
-                        + "."
-                        + ext
-                    )
-                    create_directory(newdirArtistAlbum)
-                    shutil.copy(targetFile, newdirArtistFile)
-                    madeDirs[tag.album] = newdirArtistAlbum
-            else:
-                print(f"No artist tag found for file: {file}")
+        if artist is None and file in artistNames:
+            artist = artistNames[file]
+            set_artist_tag(targetFile, artist)
+
+        if artist is None:
+            print(f"No artist found for file: {file}")
+            continue
+
+        print(f"Artist: {artist}")
+        newdirArtist = NEW_DIR + "\\" + artist
+        create_directory(newdirArtist)
+        if tag.album is None:
+            print(f"No album tag found for file: {file}")
+            continue
+        newdirArtistAlbum = newdirArtist + "\\" + tag.album + "\\"
+        newdirArtistFile = (
+            newdirArtist
+            + "\\"
+            + tag.album
+            + "\\"
+            + remove_non_ascii(tag.title)
+            + "."
+            + ext
+        )
+        create_directory(newdirArtistAlbum)
+        shutil.copy(targetFile, newdirArtistFile)
+        madeDirs[tag.album] = newdirArtistAlbum
+        print(f"Copied file to: {newdirArtistFile}")
