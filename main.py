@@ -1,4 +1,6 @@
 import os
+import tkinter as tk
+from tkinter import filedialog
 import shutil
 import re
 import requests
@@ -103,7 +105,7 @@ def get_contributing_artist(mp3_path):
     if aa is None:
         try:
             audio_file = EasyID3(mp3_path)
-            aa = audio_file.get("artist", None)
+            aa = audio_file.get("albumartist", None)
             if aa is not None:
                 aa = aa[0]
         except (ID3NoHeaderError, KeyError):
@@ -126,80 +128,104 @@ def create_directory(path):
         print(f"Error creating directory '{path}': {e}")
 
 
-# Example usage
-if __name__ == "__main__":
-    PATH_DIR = "C:\\Users\\seany\\Music"
+def read_directory(path_dir):
+    """Read mp3 files from a directory and organize them by artist and album."""
+    #    PATH_DIR = "C:\\Users\\seany\\Music"
     # create_directory(folder_path)
-    files = os.listdir(PATH_DIR)
-    madeDirs = {}
-    NEW_DIR = PATH_DIR
-    EXT = ""
+    files = os.listdir(path_dir)
+    made_dirs = {}
+    new_dir = path_dir
+    ext = ""
     # Get album names from files
-    albumNames = {}
-    artistNames = {}
+    album_names = {}
+    artist_names = {}
     for file in files:
-        albumNames = {}
-        EXT = file[file.rfind(".") + 1 :]
-        if EXT == "mp3":
-            targetFile = PATH_DIR + "\\" + file
-            tagg: TinyTag = TinyTag.get(targetFile)
-            if tagg.album is not None and tagg.album not in albumNames:
-                albumNames[tagg.album] = file
-            if tagg.album is None:
-                print(f"No album tag found for file: {file}")
-                continue
-            if tagg.albumartist is not None and file not in artistNames:
-                artistNames[file] = tagg.albumartist
-                artistNames[tagg.album] = tagg.albumartist
-                print(f"Found artist tag: {tagg.albumartist} for file: {file}")
-        for f in albumNames:
-            if f not in artistNames:
+        ext = file[file.rfind(".") + 1 :]
+        if ext != "mp3":
+            continue
+        target_file = path_dir + "\\" + file
+        tagg: TinyTag = TinyTag.get(target_file)
+        if tagg.album is not None and tagg.album not in album_names:
+            album_names[tagg.album] = file
+        if tagg.album is None:
+            print(f"No album tag found for file: {file}")
+            continue
+        if tagg.albumartist is not None and file not in artist_names:
+            artist_names[file] = tagg.albumartist
+            artist_names[tagg.album] = tagg.albumartist
+            print(f"Found artist tag: {tagg.albumartist} for file: {file}")
+        for f in album_names:
+            if f not in artist_names:
                 albums = get_album_info(f, limit=1)
                 if albums:
                     print(
                         f"Setting artist tag to: {albums[0]['artist']} for file: {file}"
                     )
-                    artistNames[file] = albums[0]["artist"]
-                    artistNames[f] = albums[0]["artist"]
+                    artist_names[file] = albums[0]["artist"]
+                    artist_names[f] = albums[0]["artist"]
             else:
-                artistNames[file] = artistNames[f]
-    for a in albumNames:
-        print(f"Album: {a} Artist: {artistNames[a]}")
+                artist_names[file] = artist_names[f]
 
     for file in files:
         ext = file[file.rfind(".") + 1 :]
-        if ext == "mp3":
-            targetFile = PATH_DIR + "\\" + file
-            print(f"Processing file: {targetFile}")
-            tag: TinyTag = TinyTag.get(targetFile)
-            if tag.album is None:
-                print(f"No album tag found for file: {file}")
-                continue
-            artist = get_contributing_artist(targetFile)
-            if file in artistNames:
-                artist = artistNames[file]
-                set_artist_tag(targetFile, artist)
-            if artist is not None and file not in artistNames:
-                artistNames[file] = artist
-                set_artist_tag(targetFile, artist)
+        if ext != "mp3":
+            continue
+        target_file = path_dir + "\\" + file
+        print(f"Processing file: {target_file}")
+        tag: TinyTag = TinyTag.get(target_file)
+        if tag.album is None:
+            print(f"No album tag found for file: {file}")
+            continue
+        artist = tag.albumartist
+        if artist is None:
+            artist = get_contributing_artist(target_file)
+        if artist is not None and file not in artist_names:
+            artist_names[file] = artist
 
-            print(f"Artist: {artist}")
-            if artist is not None:
-                newdirArtist = NEW_DIR + "\\" + artist
-                create_directory(newdirArtist)
-                if tag.album is not None:
-                    newdirArtistAlbum = newdirArtist + "\\" + tag.album + "\\"
-                    newdirArtistFile = (
-                        newdirArtist
-                        + "\\"
-                        + tag.album
-                        + "\\"
-                        + remove_non_ascii(tag.title)
-                        + "."
-                        + ext
-                    )
-                    create_directory(newdirArtistAlbum)
-                    shutil.copy(targetFile, newdirArtistFile)
-                    madeDirs[tag.album] = newdirArtistAlbum
-            else:
-                print(f"No artist tag found for file: {file}")
+        if artist is None and file in artist_names:
+            artist = artist_names[file]
+            set_artist_tag(target_file, artist)
+
+        if artist is None:
+            print(f"No artist found for file: {file}")
+            continue
+
+        print(f"Artist: {artist}")
+        newdir_artist = new_dir + "\\" + artist
+        create_directory(newdir_artist)
+        if tag.album is None:
+            print(f"No album tag found for file: {file}")
+            continue
+        newdir_artist_album = newdir_artist + "\\" + tag.album + "\\"
+        newdir_artist_file = (
+            newdir_artist
+            + "\\"
+            + tag.album
+            + "\\"
+            + remove_non_ascii(tag.title)
+            + "."
+            + ext
+        )
+        create_directory(newdir_artist_album)
+        shutil.copy(target_file, newdir_artist_file)
+        made_dirs[tag.album] = newdir_artist_album
+        print(f"Copied file to: {newdir_artist_file}")
+
+
+def browse_folder():
+    """Open a dialog to browse and select a folder."""
+    folder_path = filedialog.askdirectory()
+    print(f"Selected Folder: {folder_path}")
+    return folder_path
+
+
+# Example usage
+if __name__ == "__main__":
+   # root.withdraw()  # Hide the root window
+    root = tk.Tk()
+    root.title("MP3 Browser")
+    directory = filedialog.askdirectory()
+    if os.path.isdir(directory):
+        read_directory(directory)
+    print(directory)
+    root.mainloop()
