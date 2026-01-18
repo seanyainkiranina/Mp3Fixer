@@ -3,8 +3,23 @@ import shutil
 import re
 import requests
 from tinytag import TinyTag
-from mutagen.id3 import ID3, ID3NoHeaderError
+from mutagen.id3 import ID3, TPE1, ID3NoHeaderError
 from mutagen.easyid3 import EasyID3
+
+
+def set_artist_tag(path, artist_name):
+    """set artist tag on an mp3 file"""
+    try:
+        audiofile = EasyID3(path)
+    except ID3NoHeaderError:
+        # create basic ID3 with TPE1 then reopen as EasyID3
+        id3 = ID3()
+        id3.add(TPE1(encoding=3, text=artist_name))
+        id3.save(path)
+    audiofile = EasyID3(path)
+    audiofile["artist"] = artist_name
+    print(f"Setting artist tag to: {artist_name} for file: {path}")
+    audiofile.save()
 
 
 def get_album_info(album_name, limit=1):
@@ -29,9 +44,9 @@ def get_album_info(album_name, limit=1):
         if "releases" not in data or not data["releases"]:
             return []
 
-        albums = []
+        albums_return = []
         for release in data["releases"]:
-            albums.append(
+            albums_return.append(
                 {
                     "title": release.get("title"),
                     "artist": (
@@ -44,7 +59,7 @@ def get_album_info(album_name, limit=1):
                     "id": release.get("id"),
                 }
             )
-        return albums
+        return albums_return
 
     except requests.exceptions.RequestException as e:
         print(f"Error fetching album info: {e}")
@@ -60,6 +75,7 @@ def remove_non_ascii(text: str | None) -> str:
         raise TypeError("Input must be a string.")
 
     # Using regex to keep only ASCII characters
+    text = text.replace("'", "")  # Remove apostrophes
     return re.sub(r"[^\x00-\x7F]+", "", text.replace("?", ""))
 
 
@@ -78,22 +94,22 @@ def get_contributing_artist(mp3_path):
 
     # TPE1 = Lead performer / Soloist
     # TPE2 = Band / Orchestra / Accompaniment
-    a = None
+    aa = None
     if "TPE1" in tags:
-        a = tags["TPE1"].text[0]
+        aa = tags["TPE1"].text[0]
     elif "TPE2" in tags:
-        a = tags["TPE2"].text[0]
+        aa = tags["TPE2"].text[0]
 
-    if a is None:
+    if aa is None:
         try:
-            audio = EasyID3(mp3_path)
-            a = audio.get("artist", ["Unknown Artist"])
-            if a is not None:
-                a = a[0]
+            audio_file = EasyID3(mp3_path)
+            aa = audio_file.get("artist", None)
+            if aa is not None:
+                aa = aa[0]
         except (ID3NoHeaderError, KeyError):
             return None
 
-    return a
+    return aa
 
 
 def create_directory(path):
@@ -122,16 +138,33 @@ if __name__ == "__main__":
     albumNames = {}
     artistNames = {}
     for file in files:
+        albumNames = {}
         EXT = file[file.rfind(".") + 1 :]
         if EXT == "mp3":
             targetFile = PATH_DIR + "\\" + file
             tagg: TinyTag = TinyTag.get(targetFile)
-            if tagg.album is not None:
+            if tagg.album is not None and tagg.album not in albumNames:
                 albumNames[tagg.album] = file
-    for f in albumNames:
-        albums = get_album_info(f, limit=1)
-        if albums:
-            artistNames[albumNames[tagg.album]] = albums[0]["artist"]
+            if tagg.album is None:
+                print(f"No album tag found for file: {file}")
+                continue
+            if tagg.albumartist is not None and file not in artistNames:
+                artistNames[file] = tagg.albumartist
+                artistNames[tagg.album] = tagg.albumartist
+                print(f"Found artist tag: {tagg.albumartist} for file: {file}")
+        for f in albumNames:
+            if f not in artistNames:
+                albums = get_album_info(f, limit=1)
+                if albums:
+                    print(
+                        f"Setting artist tag to: {albums[0]['artist']} for file: {file}"
+                    )
+                    artistNames[file] = albums[0]["artist"]
+                    artistNames[f] = albums[0]["artist"]
+            else:
+                artistNames[file] = artistNames[f]
+    for a in albumNames:
+        print(f"Album: {a} Artist: {artistNames[a]}")
 
     for file in files:
         ext = file[file.rfind(".") + 1 :]
@@ -139,12 +172,16 @@ if __name__ == "__main__":
             targetFile = PATH_DIR + "\\" + file
             print(f"Processing file: {targetFile}")
             tag: TinyTag = TinyTag.get(targetFile)
+            if tag.album is None:
+                print(f"No album tag found for file: {file}")
+                continue
             artist = get_contributing_artist(targetFile)
-            if artist is None and file in artistNames:
+            if file in artistNames:
                 artist = artistNames[file]
-                audio = EasyID3(targetFile)
-                audio["artist"] = artist
-                audio.save()
+                set_artist_tag(targetFile, artist)
+            if artist is not None and file not in artistNames:
+                artistNames[file] = artist
+                set_artist_tag(targetFile, artist)
 
             print(f"Artist: {artist}")
             if artist is not None:
