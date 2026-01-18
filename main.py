@@ -140,22 +140,22 @@ def read_directory(path_dir):
     album_names = {}
     artist_names = {}
     for file in files:
-        EXT = file[file.rfind(".") + 1 :]
-        if EXT != "mp3":
+        ext = file[file.rfind(".") + 1 :]
+        if ext != "mp3":
             continue
-        targetFile = PATH_DIR + "\\" + file
-        tagg: TinyTag = TinyTag.get(targetFile)
-        if tagg.album is not None and tagg.album not in albumNames:
-            albumNames[tagg.album] = file
+        target_file = path_dir + "\\" + file
+        tagg: TinyTag = TinyTag.get(target_file)
+        if tagg.album is not None and tagg.album not in album_names:
+            album_names[tagg.album] = file
         if tagg.album is None:
             print(f"No album tag found for file: {file}")
             continue
-        if tagg.albumartist is not None and file not in artistNames:
-            artistNames[file] = tagg.albumartist
-            artistNames[tagg.album] = tagg.albumartist
+        if tagg.albumartist is not None and file not in artist_names:
+            artist_names[file] = tagg.albumartist
+            artist_names[tagg.album] = tagg.albumartist
             print(f"Found artist tag: {tagg.albumartist} for file: {file}")
-        for f in albumNames:
-            if f not in artistNames:
+        for f in album_names:
+            if f not in artist_names:
                 albums = get_album_info(f, limit=1)
                 if albums:
                     print(
@@ -164,7 +164,7 @@ def read_directory(path_dir):
                     artist_names[file] = albums[0]["artist"]
                     artist_names[f] = albums[0]["artist"]
             else:
-                artistNames[file] = artistNames[f]
+                artist_names[file] = artist_names[f]
                 artist_names[file] = artist_names[f]
 
     for file in files:
@@ -196,14 +196,14 @@ def read_directory(path_dir):
             continue
 
         print(f"Artist: {artist}")
-        newdirArtist = NEW_DIR + "\\" + artist
-        create_directory(newdirArtist)
+        newdir_artist = new_dir + "\\" + artist
+        create_directory(newdir_artist)
         if tag.album is None:
             print(f"No album tag found for file: {file}")
             continue
-        newdirArtistAlbum = newdirArtist + "\\" + tag.album + "\\"
-        newdirArtistFile = (
-            newdirArtist
+        newdir_artist_album = newdir_artist + "\\" + tag.album + "\\"
+        newdir_artist_file = (
+            newdir_artist
             + "\\"
             + tag.album
             + "\\"
@@ -211,7 +211,7 @@ def read_directory(path_dir):
             + "."
             + ext
         )
-        create_directory(newdirArtistAlbum)
-        shutil.copy(targetFile, newdirArtistFile)
-        madeDirs[tag.album] = newdirArtistAlbum
-        print(f"Copied file to: {newdirArtistFile}")
+        create_directory(newdir_artist_album)
+        shutil.copy(target_file, newdir_artist_file)
+        made_dirs[tag.album] = newdir_artist_album
+        print(f"Copied file to: {newdir_artist_file}")
