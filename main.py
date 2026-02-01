@@ -8,6 +8,7 @@ from tinytag import TinyTag
 from mutagen.id3 import ID3, TPE1, ID3NoHeaderError
 from mutagen.easyid3 import EasyID3
 
+taxt_box = None  # Global text box for logging
 
 def set_artist_tag(path, artist_name):
     """set artist tag on an mp3 file"""
@@ -132,6 +133,7 @@ def read_directory(path_dir):
     """Read mp3 files from a directory and organize them by artist and album."""
     #    PATH_DIR = "C:\\Users\\seany\\Music"
     # create_directory(folder_path)
+    text_box.insert("end",f"start : {path_dir}\n")
     files = os.listdir(path_dir)
     made_dirs = {}
     new_dir = path_dir
@@ -171,7 +173,6 @@ def read_directory(path_dir):
             continue
         target_file = path_dir + "\\" + file
         text_box.insert("end",f"Processing file: {target_file}")
-        text_box.insert("end",f"Artist: {artist}")
         tag: TinyTag = TinyTag.get(target_file)
         if tag.album is None:
             text_box.insert("end",f"No album tag found for file: {file}")
@@ -182,17 +183,16 @@ def read_directory(path_dir):
             artist = get_contributing_artist(target_file)
         if artist is not None and file not in artist_names:
             artist_names[file] = artist
+            text_box.insert("end",f"Artist set to : {artist}")
 
         if artist is None and file in artist_names:
             artist = artist_names[file]
             set_artist_tag(target_file, artist)
+            text_box.insert("end",f"setting {target_file} set to : {artist}")
 
         if artist is None:
             print(f"No artist found for file: {file}")
-            continue
-
-        if artist is None:
-            print(f"No artist found for file: {file}")
+            text_box.insert("end",f"No artist found for file: {file}")
             continue
 
         text_box.insert("end",f"Artist: {artist}")
@@ -228,13 +228,15 @@ def browse_folder():
 if __name__ == "__main__":
    # root.withdraw()  # Hide the root window
     root = tk.Tk()
+    root.geometry("800x600")  
     root.title("MP3 Browser")
 
-    text_box = tk.Text(root, height=10, width=40)
+    text_box = tk.Text(root, height=50, width=50)
     text_box.pack(padx=10, pady=10)
 
     directory = filedialog.askdirectory()
     if os.path.isdir(directory):
+        text_box.insert("end",f"Running on: {directory}\n")
         read_directory(directory)
     print(directory)
     root.mainloop()
