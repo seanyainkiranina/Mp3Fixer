@@ -10,6 +10,7 @@ from mutagen.easyid3 import EasyID3
 
 taxt_box = None  # Global text box for logging
 
+
 def set_artist_tag(path, artist_name):
     """set artist tag on an mp3 file"""
     try:
@@ -133,7 +134,7 @@ def read_directory(path_dir):
     """Read mp3 files from a directory and organize them by artist and album."""
     #    PATH_DIR = "C:\\Users\\seany\\Music"
     # create_directory(folder_path)
-    text_box.insert("end",f"start : {path_dir}\n")
+    text_box.insert("end", f"start : {path_dir}\n")
     files = os.listdir(path_dir)
     made_dirs = {}
     new_dir = path_dir
@@ -150,17 +151,22 @@ def read_directory(path_dir):
         if tagg.album is not None and tagg.album not in album_names:
             album_names[tagg.album] = file
         if tagg.album is None:
-            text_box.insert("end",f"No album tag found for file: {file}")
+            text_box.insert("end", f"No album tag found for file: {file}")
             continue
         if tagg.albumartist is not None and file not in artist_names:
             artist_names[file] = tagg.albumartist
             artist_names[tagg.album] = tagg.albumartist
-            text_box.insert("end",f"Found artist tag: {tagg.albumartist} for file: {file}")
+            text_box.insert(
+                "end", f"Found artist tag: {tagg.albumartist} for file: {file}"
+            )
         for f in album_names:
             if f not in artist_names:
                 albums = get_album_info(f, limit=1)
                 if albums:
-                    text_box.insert("end",f"Setting artist tag to: {albums[0]['artist']} for file: {file}")
+                    text_box.insert(
+                        "end",
+                        f"Setting artist tag to: {albums[0]['artist']} for file: {file}",
+                    )
                     artist_names[file] = albums[0]["artist"]
                     artist_names[f] = albums[0]["artist"]
             else:
@@ -172,34 +178,34 @@ def read_directory(path_dir):
         if ext != "mp3":
             continue
         target_file = path_dir + "\\" + file
-        text_box.insert("end",f"Processing file: {target_file}")
+        text_box.insert("end", f"Processing file: {target_file}")
         tag: TinyTag = TinyTag.get(target_file)
         if tag.album is None:
-            text_box.insert("end",f"No album tag found for file: {file}")
-            text_box.insert("end",f"Processing file: {target_file}")
+            text_box.insert("end", f"No album tag found for file: {file}")
+            text_box.insert("end", f"Processing file: {target_file}")
             continue
         artist = tag.albumartist
         if artist is None:
             artist = get_contributing_artist(target_file)
         if artist is not None and file not in artist_names:
             artist_names[file] = artist
-            text_box.insert("end",f"Artist set to : {artist}")
+            text_box.insert("end", f"Artist set to : {artist}")
 
         if artist is None and file in artist_names:
             artist = artist_names[file]
             set_artist_tag(target_file, artist)
-            text_box.insert("end",f"setting {target_file} set to : {artist}")
+            text_box.insert("end", f"setting {target_file} set to : {artist}")
 
         if artist is None:
             print(f"No artist found for file: {file}")
-            text_box.insert("end",f"No artist found for file: {file}")
+            text_box.insert("end", f"No artist found for file: {file}")
             continue
 
-        text_box.insert("end",f"Artist: {artist}")
+        text_box.insert("end", f"Artist: {artist}")
         newdir_artist = new_dir + "\\" + artist
         create_directory(newdir_artist)
         if tag.album is None:
-            text_box.insert("end",f"No album tag found for file: {file}")
+            text_box.insert("end", f"No album tag found for file: {file}")
             continue
         newdir_artist_album = newdir_artist + "\\" + tag.album + "\\"
         newdir_artist_file = (
@@ -214,7 +220,7 @@ def read_directory(path_dir):
         create_directory(newdir_artist_album)
         shutil.copy(target_file, newdir_artist_file)
         made_dirs[tag.album] = newdir_artist_album
-        text_box.insert("end",f"Copied file to: {newdir_artist_file}")
+        text_box.insert("end", f"Copied file to: {newdir_artist_file}")
 
 
 def browse_folder():
@@ -226,9 +232,9 @@ def browse_folder():
 
 # Example usage
 if __name__ == "__main__":
-   # root.withdraw()  # Hide the root window
+    # root.withdraw()  # Hide the root window
     root = tk.Tk()
-    root.geometry("800x600")  
+    root.geometry("800x600")
     root.title("MP3 Browser")
 
     text_box = tk.Text(root, height=50, width=50)
@@ -236,7 +242,7 @@ if __name__ == "__main__":
 
     directory = filedialog.askdirectory()
     if os.path.isdir(directory):
-        text_box.insert("end",f"Running on: {directory}\n")
+        text_box.insert("end", f"Running on: {directory}\n")
         read_directory(directory)
     print(directory)
     root.mainloop()
