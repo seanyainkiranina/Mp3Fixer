@@ -80,6 +80,7 @@ def remove_non_ascii(text: str | None) -> str:
 
     # Using regex to keep only ASCII characters
     text = text.replace("'", "")  # Remove apostrophes
+    
     return re.sub(r"[^\x00-\x7F]+", "", text.replace("?", ""))
 
 
@@ -115,6 +116,8 @@ def get_contributing_artist(mp3_path):
 
     return aa
 
+def safe_path(path):
+    return re.sub(r'[<>:"/\\|?*]', '_', path)
 
 def create_directory(path):
     """
@@ -125,7 +128,7 @@ def create_directory(path):
     """
     try:
         # os.makedirs with exist_ok=True will not raise an error if the folder exists
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(safe_path(path), exist_ok=True)
     except OSError as e:
         print(f"Error creating directory '{path}': {e}")
 
@@ -202,23 +205,23 @@ def read_directory(path_dir):
             continue
 
         text_box.insert("end", f"Artist: {artist}")
-        newdir_artist = new_dir + "\\" + artist
+        newdir_artist =  remove_non_ascii(new_dir) + "\\" + remove_non_ascii(artist)
         create_directory(newdir_artist)
         if tag.album is None:
             text_box.insert("end", f"No album tag found for file: {file}")
             continue
-        newdir_artist_album = newdir_artist + "\\" + tag.album + "\\"
+        newdir_artist_album = newdir_artist + "\\" + remove_non_ascii(tag.album) + "\\"
         newdir_artist_file = (
             newdir_artist
             + "\\"
-            + tag.album
+            + remove_non_ascii(tag.album)
             + "\\"
             + remove_non_ascii(tag.title)
             + "."
             + ext
         )
         create_directory(newdir_artist_album)
-        shutil.copy(target_file, newdir_artist_file)
+        shutil.copy(target_file, safe_path(newdir_artist_file))
         made_dirs[tag.album] = newdir_artist_album
         text_box.insert("end", f"Copied file to: {newdir_artist_file}")
 
@@ -237,7 +240,7 @@ if __name__ == "__main__":
     root.geometry("800x600")
     root.title("MP3 Browser")
 
-    text_box = tk.Text(root, height=50, width=50)
+    text_box = tk.Text(root, height=50, width=90)
     text_box.pack(padx=10, pady=10)
 
     directory = filedialog.askdirectory()
