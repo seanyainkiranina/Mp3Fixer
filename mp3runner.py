@@ -1,3 +1,8 @@
+"""  This module contains the Mp3Runner class, which is responsible for running 
+the MP3 organization process. It provides a GUI for browsing folders and
+ organizing MP3 files based on their metadata. The class uses the Mp3Engine to extract 
+ metadata and organize files accordingly."""
+
 import os
 import tkinter as tk
 from tkinter import filedialog
@@ -102,11 +107,5 @@ class Mp3Runner:
             )
             shutil.copy(
                 target_file,
-                os.path.join(
-                    path_dir,
-                    album_artist,
-                    album_name,
-                    title,
-                    ".mp3"
-                ),
+                os.path.join(path_dir, album_artist, album_name, title, ".mp3"),
             )

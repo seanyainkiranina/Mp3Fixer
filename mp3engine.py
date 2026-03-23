@@ -1,3 +1,8 @@
+"""" This module contains the Mp3Engine class, which is responsible for managing MP3 
+metadata operations and caching. It provides methods to read and write MP3 tags, 
+fetch album information from the MusicBrainz API, and cache metadata for efficient access.
+ The Mp3Engine class is used by the Mp3Runner to organize MP3 files based on their metadata.
+"""
 import os
 import requests
 from tinytag import TinyTag

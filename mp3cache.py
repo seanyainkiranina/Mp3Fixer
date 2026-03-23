@@ -1,3 +1,9 @@
+"""This module contains the Mp3Cache class, which is responsible for 
+storing MP3 file information in memory.
+It provides methods to set and retrieve metadata such as file name, full path,
+artist, album, and title. The Mp3Cache class also includes a method to
+remove non-ASCII characters from strings 
+to ensure that file names and metadata are safe for use in file paths."""
 import re
 
 

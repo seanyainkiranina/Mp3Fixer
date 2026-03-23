@@ -1,3 +1,10 @@
+"""  This module contains the HashTable class, which is a simple implementation of a 
+hash table using chaining for collision resolution. 
+It provides methods to insert, search, and delete key-value pairs, 
+as well as a method to list all keys in the hash table.
+The HashTable class is used by the MusicCache to store
+and manage cached metadata for MP3 files."""
+
 from typing import Optional
 from node import Node
 from mp3cache import Mp3Cache
@@ -37,7 +44,6 @@ class HashTable:
                     return cache.file_name
         return None
 
-
     def update(self, key, value, attribute_name):
         """Insert or update a key-value pair in the hash table"""
         stored_value = self.search(key)  # Ensure the key exists before updating
@@ -66,6 +72,7 @@ class HashTable:
             elif attribute_name == "file_name":
                 stored_value.set_file_name(value)
             self.insert(key, stored_value)  # Update the existing key with new value
+
     def insert(self, key, value):
         """Insert or update a key-value pair in the hash table"""
         index = self._hash(key)
